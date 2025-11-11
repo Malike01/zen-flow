@@ -2,8 +2,6 @@
 
 > A full-stack, Trello-like Kanban board (MERN Stack) built to showcase senior-level React and Node.js patterns. ZenFlow provides a high-performance, real-time interface for managing tasks, powered by a RESTful API and a MongoDB database.
 
-[Add a screenshot or a short GIF of your project here! A demo of the drag-and-drop feature interacting with the backend is highly effective.]
-
 ## ✨ Features
 
 - **Full-Stack MERN Application:** True persistence with a **Node.js/Express/MongoDB** backend.
@@ -68,7 +66,7 @@ This project is a monorepo containing two separate applications: `/client` and `
 ### Prerequisites
 
 - Node.js (v18+)
-- MongoDB (A local instance or a free [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) connection string)
+- MongoDB
 
 ### 1. Configure the Backend (Server)
 
@@ -77,16 +75,12 @@ This project is a monorepo containing two separate applications: `/client` and `
     cd server
     ```
 2.  Install server dependencies:
+
     ```bash
     npm install
     ```
-3.  Create a `.env` file in the `/server` directory:
-    ```
-    PORT=3001
-    MONGODB_URI=[Your_MongoDB_Connection_String]
-    CLIENT_URL=http://localhost:5173
-    ```
-4.  Run the backend server:
+
+3.  Run the backend server:
     ```bash
     npm run dev
     ```
