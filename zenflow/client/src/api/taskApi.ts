@@ -17,3 +17,8 @@ export const updateTask = async (
 export const deleteTask = async (taskId: string): Promise<void> => {
   await api.delete(`/api/tasks/${taskId}`);
 };
+
+export const completePomodoro = async (taskId: string): Promise<ITask> => {
+  const { data } = await api.put(`/api/tasks/${taskId}/complete-pomodoro`);
+  return data;
+};

@@ -93,8 +93,32 @@ const deleteTask = async (req, res) => {
 
 // -----------------------------------------------------------------
 
+const completePomodoro = async (req, res) => {
+  try {
+    const { id: taskId } = req.params;
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $inc: { pomodoroCount: 1 } }, 
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// -----------------------------------------------------------------
+
 module.exports = {
   createTask,
   updateTask,
   deleteTask,
+  completePomodoro
 };

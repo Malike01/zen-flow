@@ -2,6 +2,7 @@ export interface ITask {
   _id: string;
   title: string;
   description?: string;
+  pomodoroCount:number;
   createdAt: string;
   updatedAt: string;
 }

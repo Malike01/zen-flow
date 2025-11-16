@@ -13,6 +13,10 @@ const TaskSchema = new mongoose.Schema(
       trim: true,
       default: '', 
     },
+    pomodoroCount: {
+      type: Number,
+      default: 0, 
+    },
   },
   {
     timestamps: true,
