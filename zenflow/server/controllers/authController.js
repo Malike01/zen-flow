@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
+const Tag = require('../models/Tag'); // <-- BU SATIR EKSİK (veya yanlış)
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
