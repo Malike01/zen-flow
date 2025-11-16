@@ -4,7 +4,8 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db'); 
 
 const taskRoutes = require('./routes/taskRoutes');
-const boardRoutes = require('./routes/boardRoutes'); // <<< YENİ SATIR
+const boardRoutes = require('./routes/boardRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.get('/api', (req, res) => {
 
 app.use('/api/tasks', taskRoutes);
 app.use('/api/board', boardRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Sunucu http://localhost:${PORT} üzerinde çalışıyor`);

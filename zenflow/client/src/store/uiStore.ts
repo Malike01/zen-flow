@@ -22,6 +22,12 @@ interface UiState {
   startTimer: (taskId: string) => void;
   stopTimer: () => void;
   tick: () => void;
+
+  // Report State
+  isReportModalOpen: boolean;
+  openReportModal: () => void;
+  closeReportModal: () => void;
+
   // ------------------------------------------
 }
 
@@ -85,5 +91,11 @@ export const useUiStore = create<UiState>((set, get) => ({
       }
     }
   },
+
+  // Report State
+  isReportModalOpen: false,
+  openReportModal: () => set({ isReportModalOpen: true }),
+  closeReportModal: () => set({ isReportModalOpen: false }),
+  
   // ------------------------------------
 }));

@@ -1,13 +1,18 @@
-import { Layout, Typography } from 'antd';
+import { Layout, Tooltip, Typography } from 'antd';
 import { KanbanBoard } from './components/KanbanBoard'; 
 import { TaskModal } from './components/TaskModal';
 import { Footer } from 'antd/es/layout/layout';
 import { FocusTimer } from './components/FocusTimer';
+import { WeeklyReportModal } from './components/WeeklyReportModal';
+import { useUiStore } from './store/uiStore';
+import { FundViewOutlined } from '@ant-design/icons'; 
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
 
 function App() {
+  const { openReportModal } = useUiStore();
+  
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ 
@@ -21,13 +26,24 @@ function App() {
               ZenFlow
             </Title>
         </div>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <FocusTimer />
+          <Tooltip title="Haftalık Raporu Görüntüle">
+            <FundViewOutlined
+              style={{
+                fontSize: '24px',
+                cursor: 'pointer',
+                marginLeft: '16px',
+              }}
+              onClick={openReportModal} 
+            />
+          </Tooltip>
         </div>
       </Header>
       <Content style={{ padding: '0 24px' }}>
         <KanbanBoard/>
         <TaskModal />
+        <WeeklyReportModal />
       </Content>
       <Footer style={{ textAlign: 'center', background: '#f0f2f5' }}>
         ZenFlow ©{new Date().getFullYear()} — A Full-Stack Kanban Board

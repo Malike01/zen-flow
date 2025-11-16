@@ -44,6 +44,8 @@ const moveTask = async (req, res) => {
       destinationIndex,
     } = req.body;
 
+    let completedAtUpdate = {};
+
     // --- SCENARIO 1: Task reordering in SAME COLUMN ---
     if (sourceColumnId === destinationColumnId) {
       await Column.findByIdAndUpdate(sourceColumnId, {
@@ -76,8 +78,18 @@ const moveTask = async (req, res) => {
         },
       });
 
-      res.status(200).json({ message: 'Task moved to new column' });
+      const destinationColumn = await Column.findById(destinationColumnId);
+
+      if (destinationColumn && destinationColumn.title === 'Done') {
+        completedAtUpdate = { completedAt: new Date() }; 
+      } else {
+        completedAtUpdate = { completedAt: null };
+      }
+      await Task.findByIdAndUpdate(taskId, completedAtUpdate);
+      // ------------------------------------------
     }
+    res.status(200).json({ message: 'Task moved to new column' });
+    
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
