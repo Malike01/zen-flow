@@ -3,35 +3,47 @@ const Task = require('../models/Task');
 const asyncHandler = require('express-async-handler');
 
 const getBoard = asyncHandler(async (req, res) => {
+  
   try {
-    const fullBoard = await Column.find({ user: req.user.id }).populate('tasks');
+    
+    const fullBoard = await Column.find({ user: req.user.id }).populate({
+      path: 'tasks',
+      populate: {
+        path: 'tags',
+        model: 'Tag',
+      },
+    });
 
     if (!fullBoard || fullBoard.length === 0) {
-      // Create some default tasks first
+      
       const task1 = await Task.create({ title: 'Welcome Task 1', description: 'Drag me!', user: req.user.id });
       const task2 = await Task.create({ title: 'Welcome Task 2', description: 'Click me to edit', user: req.user.id });
 
-      // Create default columns and add the tasks
       const defaultColumns = [
-        { title: 'To Do', tasks: [task1._id, task2._id], user: req.user.id },
-        { title: 'In Progress', tasks: [], user: req.user.id },
-        { title: 'Done', tasks: [], user: req.user.id },
+        { title: 'To Do', user: req.user.id, tasks: [task1._id, task2._id] },
+        { title: 'In Progress', user: req.user.id, tasks: [] },
+        { title: 'Done', user: req.user.id, tasks: [] },
       ];
 
       await Column.insertMany(defaultColumns);
+
+      const newBoard = await Column.find({ user: req.user.id }).populate({
+        path: 'tasks',
+        populate: { path: 'tags', model: 'Tag' },
+      });
       
-      // Fetch the newly created board again
-      const newBoard = await Column.find({user: req.user.id}).populate('tasks');
       return res.status(200).json(newBoard);
+    
     }
-    // --------------------------------------------------
 
     res.status(200).json(fullBoard);
-  } catch (error)
- {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+
+
+  } catch (error) {
+    res.status(500);
+    throw new Error(`Board fetch error: ${error.message}`);
   }
+
 });
 
 // -----------------------------------------------------------------

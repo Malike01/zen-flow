@@ -1,4 +1,4 @@
-import { Badge, Card, Popconfirm, Tooltip, message } from 'antd';
+import { Badge, Card, Popconfirm, Tag, Tooltip, message } from 'antd';
 import { Draggable } from '@hello-pangea/dnd';
 import { DeleteOutlined, EditOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -107,7 +107,6 @@ export const TaskCard = React.memo(({ task, index }: TaskCardProps) => {
                 </div>
               }
             >
-              {/* 5. GÖREV BAŞLIĞI VE POMODORO SAYACI */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{task.description}</span>
                 {task.pomodoroCount > 0 && (
@@ -119,6 +118,15 @@ export const TaskCard = React.memo(({ task, index }: TaskCardProps) => {
                   </Tooltip>
                 )}
               </div>
+              {task.tags && task.tags.length > 0 && (
+              <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {task.tags.map((tag) => (
+                  <Tag key={tag._id} color={tag.color}>
+                    {tag.name}
+                  </Tag>
+                ))}
+              </div>
+            )}
             </Card>
           </div>
         )}

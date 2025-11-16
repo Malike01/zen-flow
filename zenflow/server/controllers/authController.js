@@ -34,6 +34,20 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      const defaultTags = [
+        { name: 'Bug', color: '#ff4d4f' },       
+        { name: 'Feature', color: '#52c41a' },  
+        { name: 'High Priority', color: '#faad14' },
+        { name: 'Refactor', color: '#1677ff' },
+      ];
+
+      const tagsToCreate = defaultTags.map(tag => ({
+        ...tag,
+        user: user._id,
+      }));
+
+      await Tag.insertMany(tagsToCreate);
+
       res.status(201).json({
         _id: user._id,
         email: user.email,

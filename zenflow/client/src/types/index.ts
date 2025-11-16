@@ -2,6 +2,7 @@ export interface ITask {
   _id: string;
   title: string;
   description?: string;
+  tags?: ITag[];
   pomodoroCount:number;
   completedAt: string;
   createdAt: string;
@@ -29,6 +30,12 @@ export interface CreateTaskPayload {
 export interface UpdateTaskPayload {
   title?: string;
   description?: string;
+}
+
+export interface ITag {
+  _id: string;
+  name: string;
+  color: string;
 }
 
 export type BoardData = IColumn[];
