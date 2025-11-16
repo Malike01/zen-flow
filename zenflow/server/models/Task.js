@@ -20,7 +20,13 @@ const TaskSchema = new mongoose.Schema(
     completedAt: {
       type: Date, 
       default: null, 
-    }
+    },
+    
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User', 
+    },
   },
   {
     timestamps: true,

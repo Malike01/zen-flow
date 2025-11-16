@@ -28,6 +28,11 @@ interface UiState {
   openReportModal: () => void;
   closeReportModal: () => void;
 
+  // Settings State
+  isSettingsModalOpen: boolean;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
+
   // ------------------------------------------
 }
 
@@ -96,6 +101,11 @@ export const useUiStore = create<UiState>((set, get) => ({
   isReportModalOpen: false,
   openReportModal: () => set({ isReportModalOpen: true }),
   closeReportModal: () => set({ isReportModalOpen: false }),
+
+  // Settings State
+  isSettingsModalOpen: false,
+  openSettingsModal: () => set({ isSettingsModalOpen: true }),
+  closeSettingsModal: () => set({ isSettingsModalOpen: false }),
   
   // ------------------------------------
 }));

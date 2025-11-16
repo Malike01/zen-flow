@@ -3,6 +3,7 @@ import { useUiStore } from '../store/uiStore';
 import { Button, message, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { completePomodoro } from '../api/taskApi';
+import { useAuthStore } from '../store/authStore';
 
 const { Text } = Typography;
 
@@ -21,8 +22,13 @@ export const FocusTimer = () => {
     tick,
     stopTimer,
   } = useUiStore();
+
+  const { enableMusic } = useAuthStore((state) => state.user.settings);
   
   const queryClient = useQueryClient();
+
+  const audioRef = useRef(new Audio('/sounds/relaxing-music.mp3'));
+  audioRef.current.loop = true;
   
   const pomodoroMutation = useMutation({
     mutationFn: completePomodoro,
@@ -65,6 +71,20 @@ export const FocusTimer = () => {
       }
     }
   }, [secondsRemaining, timerMode, activeTaskId, pomodoroMutation]);
+
+  useEffect(() => {
+    if (isTimerRunning && enableMusic) {
+      audioRef.current.play();
+    } else {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
+    return () => {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    };
+  }, [isTimerRunning, enableMusic]);
 
   if (!isTimerRunning && secondsRemaining === 1500) {
     return null;

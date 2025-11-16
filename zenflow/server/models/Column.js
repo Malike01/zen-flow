@@ -13,6 +13,11 @@ const ColumnSchema = new Schema({
       ref: 'Task',
     },
   ],
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User',
+  },
 });
 
 module.exports = mongoose.model('Column', ColumnSchema);

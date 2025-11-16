@@ -3,7 +3,9 @@ const router = express.Router();
 
 const { getBoard, moveTask } = require('../controllers/boardController');
 
-router.route('/').get(getBoard);
-router.route('/move').put(moveTask);
+const { protect } = require('../middleware/authMiddleware')
+
+router.route('/').get(protect,getBoard);
+router.route('/move').put(protect, moveTask);
 
 module.exports = router;
