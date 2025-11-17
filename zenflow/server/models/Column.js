@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ColumnSchema = new Schema({
+  board: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'Board',
+  },
   title: {
     type: String,
     required: [true, 'Please provide a column title'],
@@ -13,11 +18,6 @@ const ColumnSchema = new Schema({
       ref: 'Task',
     },
   ],
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User',
-  },
 });
 
 module.exports = mongoose.model('Column', ColumnSchema);

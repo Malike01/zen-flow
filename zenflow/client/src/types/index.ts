@@ -20,12 +20,16 @@ export interface MoveTaskPayload {
   sourceColumnId: string;
   destinationColumnId: string;
   destinationIndex: number;
+  boardId: string;
+  sourceIndex: number;
 }
 
 export interface CreateTaskPayload {
   title: string;
   description?: string;
   tags: string[];
+  boardId: string;
+  columnId: string;
 }
 
 export interface UpdateTaskPayload {
@@ -37,6 +41,20 @@ export interface ITag {
   _id: string;
   name: string;
   color: string;
+}
+export interface IBoard {
+  _id: string;
+  name: string;
+  owner: string;
+  members: string[];
+  columns: IColumn[]; 
+  createdAt: string;
+}
+export interface IBoardSummary {
+  _id: string;
+  name: string;
+  owner: string;
+  createdAt: string;
 }
 
 export type BoardData = IColumn[];

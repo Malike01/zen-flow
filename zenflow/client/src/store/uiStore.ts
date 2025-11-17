@@ -10,7 +10,8 @@ interface UiState {
   isTaskModalOpen: boolean;
   modalMode: 'create' | 'edit';
   editingTaskId: string | null;
-  openModal: (mode: 'create' | 'edit', taskId?: string) => void;
+  activeColumnId: string | null;
+  openModal: (mode: 'create' | 'edit', taskId?: string, columnId?: string) => void;
   closeModal: () => void;
 
   //Timer
@@ -41,17 +42,20 @@ export const useUiStore = create<UiState>((set, get) => ({
   isTaskModalOpen: false,
   modalMode: 'create',
   editingTaskId: null,
-  openModal: (mode, taskId = undefined) =>
+  activeColumnId: null,
+  openModal: (mode, taskId = undefined, columnId = undefined) =>
     set({
       isTaskModalOpen: true,
       modalMode: mode,
       editingTaskId: taskId || null,
+      activeColumnId: columnId || null,
     }),
   closeModal: () =>
     set({
       isTaskModalOpen: false,
       editingTaskId: null,
       modalMode: 'create',
+      activeColumnId: null,
     }),
 
   //Timer

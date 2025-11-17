@@ -1,5 +1,5 @@
 import api from './axiosConfig';
-import type { CreateTaskPayload, ITask, UpdateTaskPayload } from '../types';
+import type { CreateTaskPayload, ITask, MoveTaskPayload, UpdateTaskPayload } from '../types';
 
 export const createTask = async (payload: CreateTaskPayload): Promise<ITask> => {
   const { data } = await api.post('/api/tasks', payload);
@@ -21,4 +21,8 @@ export const deleteTask = async (taskId: string): Promise<void> => {
 export const completePomodoro = async (taskId: string): Promise<ITask> => {
   const { data } = await api.put(`/api/tasks/${taskId}/complete-pomodoro`);
   return data;
+};
+
+export const moveTask = async (payload: MoveTaskPayload): Promise<void> => {
+  await api.put('/api/tasks/move', payload);
 };

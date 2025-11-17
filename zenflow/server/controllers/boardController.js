@@ -1,104 +1,119 @@
+const asyncHandler = require('express-async-handler');
+const Board = require('../models/Board');
 const Column = require('../models/Column');
 const Task = require('../models/Task');
-const asyncHandler = require('express-async-handler');
 
-const getBoard = asyncHandler(async (req, res) => {
-  
-  try {
-    
-    const fullBoard = await Column.find({ user: req.user.id }).populate({
-      path: 'tasks',
+// -----------------------------------------------------------------
+// @desc    Create a new board
+// @route   POST /api/boards
+// @access  Private
+const createBoard = asyncHandler(async (req, res) => {
+  const { name } = req.body; // Pano adını al
+  if (!name) {
+    res.status(400);
+    throw new Error('Please provide a board name');
+  }
+
+  const newBoard = await Board.create({
+    name,
+    owner: req.user.id,
+    members: [req.user.id], 
+  });
+
+  const defaultColumns = [
+    { title: 'To Do', board: newBoard._id },
+    { title: 'In Progress', board: newBoard._id },
+    { title: 'Done', board: newBoard._id },
+  ];
+  const createdColumns = await Column.insertMany(defaultColumns);
+
+  newBoard.columns = createdColumns.map((col) => col._id);
+  await newBoard.save();
+
+  res.status(201).json(newBoard);
+});
+
+// -----------------------------------------------------------------
+// @desc    Get all boards a user is a member of
+// @route   GET /api/boards
+// @access  Private
+const getMyBoards = asyncHandler(async (req, res) => {
+  const boards = await Board.find({ members: req.user.id }).select('name owner createdAt');
+  res.status(200).json(boards);
+});
+
+// -----------------------------------------------------------------
+// @desc    Get a single board by its ID
+// @route   GET /api/boards/:boardId
+// @access  Private
+const getBoardById = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+
+  const board = await Board.findById(boardId);
+  if (!board) {
+    res.status(404);
+    throw new Error('Board not found');
+  }
+
+  if (!board.members.map(m => m.toString()).includes(req.user.id)) {
+    res.status(403); 
+    throw new Error('User not authorized to access this board');
+  }
+
+  const populatedBoard = await Board.findById(boardId).populate({
+    path: 'columns',
+    populate: {
+      path: 'tasks', 
       populate: {
-        path: 'tags',
+        path: 'tags', 
         model: 'Tag',
       },
-    });
+    },
+  });
 
-    if (!fullBoard || fullBoard.length === 0) {
-      
-      const task1 = await Task.create({ title: 'Welcome Task 1', description: 'Drag me!', user: req.user.id });
-      const task2 = await Task.create({ title: 'Welcome Task 2', description: 'Click me to edit', user: req.user.id });
-
-      const defaultColumns = [
-        { title: 'To Do', user: req.user.id, tasks: [task1._id, task2._id] },
-        { title: 'In Progress', user: req.user.id, tasks: [] },
-        { title: 'Done', user: req.user.id, tasks: [] },
-      ];
-
-      await Column.insertMany(defaultColumns);
-
-      const newBoard = await Column.find({ user: req.user.id }).populate({
-        path: 'tasks',
-        populate: { path: 'tags', model: 'Tag' },
-      });
-      
-      return res.status(200).json(newBoard);
-    
-    }
-
-    res.status(200).json(fullBoard);
-
-
-  } catch (error) {
-    res.status(500);
-    throw new Error(`Board fetch error: ${error.message}`);
-  }
-
+  res.status(200).json(populatedBoard);
 });
 
-// -----------------------------------------------------------------
+const inviteUserToBoard = asyncHandler(async (req, res) => {
+  const { email } = req.body; 
+  const { boardId } = req.params;
+  const inviterId = req.user.id; 
 
-const moveTask = asyncHandler(async (req, res) => {
-  const {
-    taskId,
-    sourceColumnId,
-    destinationColumnId,
-    destinationIndex,
-  } = req.body;
-  
-  const userId = req.user.id;
+  if (!email) {
+    res.status(400);
+    throw new Error('Please provide an email to invite');
+  }
 
-  const sourceColumn = await Column.findOne({ _id: sourceColumnId, user: userId });
-  const destinationColumn = await Column.findOne({ _id: destinationColumnId, user: userId });
-
-  if (!sourceColumn || !destinationColumn) {
+  const userToInvite = await User.findOne({ email: email.toLowerCase() });
+  if (!userToInvite) {
     res.status(404);
-    throw new Error('Column not found or user not authorized');
+    throw new Error('User not found with this email');
   }
 
-  let completedAtUpdate = {};
-
-  if (sourceColumnId === destinationColumnId) {
-    await Column.findByIdAndUpdate(sourceColumnId, { $pull: { tasks: taskId } });
-    await Column.findByIdAndUpdate(sourceColumnId, {
-      $push: { tasks: { $each: [taskId], $position: destinationIndex } },
-    });
-  } else {
-    await Column.findByIdAndUpdate(sourceColumnId, { $pull: { tasks: taskId } });
-    await Column.findByIdAndUpdate(destinationColumnId, {
-      $push: { tasks: { $each: [taskId], $position: destinationIndex } },
-    });
-
-    if (destinationColumn.title === 'Done') {
-      completedAtUpdate = { completedAt: new Date() };
-    } else {
-      completedAtUpdate = { completedAt: null };
-    }
-
-    const task = await Task.findOne({ _id: taskId, user: userId });
-    if (!task) {
-      res.status(404);
-      throw new Error('Task not found or user not authorized');
-    }
-    await task.updateOne(completedAtUpdate);
+  const board = await Board.findById(boardId);
+  if (!board) {
+    res.status(404);
+    throw new Error('Board not found');
   }
 
-  res.status(200).json({ message: 'Task moved successfully' });
+  if (board.owner.toString() !== inviterId) {
+    res.status(403); // Yasaklı
+    throw new Error('Only the board owner can invite members');
+  }
+
+  if (board.members.map(m => m.toString()).includes(userToInvite._id.toString())) {
+    res.status(400);
+    throw new Error('User is already a member of this board');
+  }
+
+  await board.updateOne({ $addToSet: { members: userToInvite._id } });
+
+  res.status(200).json({ message: 'User invited successfully' });
 });
-
-// -----------------------------------------------------------------
 
 module.exports = {
-  getBoard,
-  moveTask
+  createBoard,
+  getMyBoards,
+  getBoardById,
+  inviteUserToBoard
 };

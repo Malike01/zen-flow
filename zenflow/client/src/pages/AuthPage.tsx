@@ -46,7 +46,6 @@ export const AuthPage = () => {
   });
 
   const onFinish = (values: any) => {
-    console.log('Form values:', values);
     if (mode === 'login') {
       loginMutation.mutate(values);
     } else {

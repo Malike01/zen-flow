@@ -1,67 +1,65 @@
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-import type { IColumn, MoveTaskPayload } from '../types';
+import type { IBoard, IColumn, MoveTaskPayload } from '../types';
 import { Column } from './Column';
-import { useBoardQuery } from '../hooks/useBoardQuery';
-import { Layout, Spin, Alert } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { moveTask } from '../api/boardApi';
 import { message } from 'antd'; 
+import { moveTask } from '../api/taskApi';
 
-export const KanbanBoard = () => {
+type KanbanBoardProps = {
+  board: IBoard; 
+}
+
+export const KanbanBoard = ({ board }: KanbanBoardProps) => {
   const queryClient = useQueryClient();
-  
-  const { data: boardData, isLoading, isError, error } = useBoardQuery();
 
   // 2. DATA MUTATION 
-  const moveTaskMutation = useMutation({
+const moveTaskMutation = useMutation({
     mutationFn: moveTask,
 
-    // --- This is the Optimistic Update logic ---
-    onMutate: async (movedTask: MoveTaskPayload) => {
-      await queryClient.cancelQueries({ queryKey: ['boardData'] });
+    onMutate: async (movedTask: MoveTaskPayload) => {
+      await queryClient.cancelQueries({ queryKey: ['boardData', board._id] });
 
-      const previousBoard = queryClient.getQueryData<IColumn[]>(['boardData']);
+      const previousBoard = queryClient.getQueryData<IBoard>(['boardData', board._id]);
 
-      queryClient.setQueryData<IColumn[]>(['boardData'], (oldBoard) => {
-        if (!oldBoard) return [];
+      queryClient.setQueryData<IBoard>(['boardData', board._id], (oldBoard) => {
+        if (!oldBoard) return undefined; 
+ 
+        const newColumns = oldBoard.columns.map(col => ({
+          ...col,
+          tasks: [...col.tasks], 
+        }));
 
-        // Create a new copy of the board state
-        const newBoard = oldBoard.map(col => ({ ...col, tasks: [...col.tasks] }));
+        const sourceCol = newColumns.find(col => col._id === movedTask.sourceColumnId);
+        const destCol = newColumns.find(col => col._id === movedTask.destinationColumnId);
+        
+        if (!sourceCol || !destCol) return oldBoard; 
 
-        const sourceCol = newBoard.find(col => col._id === movedTask.sourceColumnId);
-        const destCol = newBoard.find(col => col._id === movedTask.destinationColumnId);
-        
-        if (!sourceCol || !destCol) return oldBoard; // Safety check
+        const [taskToMove] = sourceCol.tasks.splice(movedTask.sourceIndex, 1);
+        
+        if (!taskToMove) return oldBoard;
 
-        const taskToMove = sourceCol.tasks.find(task => task._id === movedTask.taskId);
-        if (!taskToMove) return oldBoard;
+        destCol.tasks.splice(movedTask.destinationIndex, 0, taskToMove);
 
-        // Remove task from source column
-        sourceCol.tasks = sourceCol.tasks.filter(task => task._id !== movedTask.taskId);
-        
-        // Add task to destination column at the correct index
-        destCol.tasks.splice(movedTask.destinationIndex, 0, taskToMove);
+        return {
+          ...oldBoard,
+          columns: newColumns,
+        };
+      });
 
-        return newBoard;
-      });
+      return { previousBoard };
+    },
 
-      // 4. Return the snapshotted value (to be used in onError)
-      return { previousBoard };
-    },
+    onError: (err, variables, context) => {
+      if (context?.previousBoard) {
+        queryClient.setQueryData(['boardData', board._id], context.previousBoard);
+      }
+      message.error(`Failed to move task: ${err.message}`);
+    },
 
-    // --- This is the Rollback logic ---
-    onError: (err, variables, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(['boardData'], context.previousBoard);
-      }
-      message.error(`Failed to move task: ${err.message}`);
-    },
-
-    // --- This runs after success OR error ---
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['boardData'] });
-    },
-  });
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['boardData', board._id] });
+    },
+  });
 
   // ----------------------------------------------------
 
@@ -84,34 +82,15 @@ export const KanbanBoard = () => {
       sourceColumnId: source.droppableId,
       destinationColumnId: destination.droppableId,
       destinationIndex: destination.index,
+      sourceIndex: source.index,
+      boardId: board._id,
     });
   };
-
-  if (isLoading) {
-    return (
-      <Layout style={{ minHeight: 'calc(100vh - 64px)', display: 'grid', placeItems: 'center' }}>
-        <Spin size="large" tip="Loading Board..." />
-      </Layout>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Layout style={{ minHeight: 'calc(100vh - 64px)', padding: '50px' }}>
-        <Alert
-          message="Error!"
-          description={`Could not fetch board data: ${error.message}`}
-          type="error"
-          showIcon
-        />
-      </Layout>
-    );
-  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div style={{ display: 'flex', padding: '24px 0' }}>
-        {boardData && boardData.map((column) => (
+       {board.columns.map((column: IColumn) => ( // Tip adını 'IColumnType' olarak değiştirdik
           <Column key={column._id} column={column} />
         ))}
       </div>

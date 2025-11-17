@@ -1,7 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { ProtectedRoute } from './components/ProtectedRoute'; // <-- 1. İMPORT
-import BoardPage from './pages/BoardPage';
+import BoardDetailPage from './pages/BoardDetailPage';
+import { DashboardPage } from './pages/DashboardPage';
 
 function App() {
   return (
@@ -11,7 +12,16 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <BoardPage />
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/board/:boardId"
+        element={
+          <ProtectedRoute>
+            <BoardDetailPage />
           </ProtectedRoute>
         }
       />

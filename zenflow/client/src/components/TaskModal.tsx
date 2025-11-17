@@ -6,13 +6,13 @@ import { getTags } from '../api/tagApi';
 import { useAiAssistant } from '../hooks/useAiAssistant'; 
 import { useEffect } from 'react';
 import { ThunderboltOutlined  } from '@ant-design/icons';
-import type { CreateTaskPayload, ITag, UpdateTaskPayload } from '../types';
+import type { CreateTaskPayload, IBoard, ITag, ITask, UpdateTaskPayload } from '../types';
 
 const { TextArea } = Input;
 const { Text } = Typography;
 
-export const TaskModal = () => {
-  const { isTaskModalOpen, modalMode, editingTaskId, closeModal } = useUiStore();
+export const TaskModal = ({boardId}: {boardId: string}) => {
+  const { isTaskModalOpen, modalMode, editingTaskId, closeModal, activeColumnId } = useUiStore();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditMode = modalMode === 'edit';
@@ -30,7 +30,7 @@ export const TaskModal = () => {
   const createTaskMutation = useMutation({
     mutationFn: createTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['boardData'] });
+      queryClient.invalidateQueries({ queryKey: ['boardData', boardId] });
     },
     onError: (err) => messageApi.error(`Failed to create task: ${err.message}`),
   });
@@ -40,7 +40,7 @@ export const TaskModal = () => {
       updateTask(taskId, payload),
     onSuccess: () => {
       messageApi.success('Task updated!');
-      queryClient.invalidateQueries({ queryKey: ['boardData'] });
+      queryClient.invalidateQueries({ queryKey: ['boardData', boardId] });
       closeModal();
     },
     onError: (err) => messageApi.error(`Failed to update task: ${err.message}`),
@@ -50,7 +50,12 @@ export const TaskModal = () => {
   const aiCallbacks = {
     onSubtaskSuccess: (subtasks: string[]) => {
       subtasks.forEach(subtaskTitle => {
-        createTaskMutation.mutate({ title: subtaskTitle, tags: [] });
+        createTaskMutation.mutate({ 
+          title: subtaskTitle, 
+          tags: [],
+          boardId: boardId, 
+          columnId: activeColumnId || ''
+        });
       });
       closeModal();
     },
@@ -74,7 +79,16 @@ export const TaskModal = () => {
 
   useEffect(() => {
     if (isTaskModalOpen) {
-      if (isEditMode && editingTaskId) { /* ... */ } else { form.resetFields(); }
+      if (isEditMode && editingTaskId) {
+        const taskData: ITask | undefined = queryClient
+          .getQueryData<IBoard>(['boardData', boardId])
+          ?.columns.flatMap((col) => col.tasks) 
+          .find((task) => task._id === editingTaskId);
+
+          form.setFieldsValue(taskData || {})
+      } else { 
+        form.resetFields();
+       }
     }
   }, [isTaskModalOpen, isEditMode, editingTaskId, queryClient, form]);
   
@@ -83,10 +97,19 @@ export const TaskModal = () => {
       if (!editingTaskId) return;
       updateTaskMutation.mutate({ taskId: editingTaskId, payload: values });
     } else {
-      createTaskMutation.mutate(values as CreateTaskPayload, {
+      if (!activeColumnId) {
+        messageApi.error("Cannot create task: No column context.");
+        return;
+      }
+      createTaskMutation.mutate({ 
+          ...values, 
+          boardId: boardId || '', 
+          columnId: activeColumnId || '' 
+        } as CreateTaskPayload, {
         onSuccess: () => {
-          messageApi.success('Task created!');
+          message.success('Task created!');
           closeModal();
+          queryClient.invalidateQueries({ queryKey: ['boardData', boardId] });
         }
       });
     }

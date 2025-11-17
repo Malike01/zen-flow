@@ -34,7 +34,7 @@ export const Column = ({ column }: ColumnProps) => {
           type="dashed"
           icon={<PlusOutlined />}
           style={{ margin: '0 16px 16px 16px' }}
-          onClick={()=> openModal('create')}
+          onClick={()=> openModal('create', undefined, column._id)}
         >
           Add New Task
         </Button>

@@ -1,42 +1,38 @@
 const mongoose = require('mongoose');
 
-// We are defining what a "Task" will look like in the database.
 const TaskSchema = new mongoose.Schema(
   {
+    board: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'Board',
+    },
     title: {
       type: String,
-      required: [true, 'Please provide a title'], // Title is required
-      trim: true, // Trims whitespace from the beginning and end
+      required: [true, 'Please provide a title'],
+      trim: true,
     },
     description: {
       type: String,
       trim: true,
-      default: '', 
+      default: '',
     },
     pomodoroCount: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
     completedAt: {
-      type: Date, 
-      default: null, 
-    },
-    
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: 'User', 
+      type: Date,
+      default: null,
     },
     tags: [
       {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Tag', 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tag',
       },
     ],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model('Task', TaskSchema);

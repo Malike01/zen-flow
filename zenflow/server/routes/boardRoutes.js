@@ -1,11 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const {
+  createBoard,
+  getMyBoards,
+  getBoardById,
+  inviteUserToBoard
+} = require('../controllers/boardController');
+const { protect } = require('../middleware/authMiddleware'); 
 
-const { getBoard, moveTask } = require('../controllers/boardController');
+router.use(protect);
 
-const { protect } = require('../middleware/authMiddleware')
+router.route('/')
+  .get(getMyBoards)
+  .post(createBoard);
 
-router.route('/').get(protect,getBoard);
-router.route('/move').put(protect, moveTask);
+router.route('/:boardId').get(getBoardById);
+router.route('/:boardId/invite').post(inviteUserToBoard);
 
 module.exports = router;
