@@ -24,7 +24,7 @@ function BoardPage() {
 
   const handleLogout = () => {
     logout(); 
-    message.success('Başarıyla çıkış yaptınız.');
+    messageApi.success('Başarıyla çıkış yaptınız.');
     navigate('/auth'); 
   };
   

@@ -25,6 +25,7 @@ export interface MoveTaskPayload {
 export interface CreateTaskPayload {
   title: string;
   description?: string;
+  tags: string[];
 }
 
 export interface UpdateTaskPayload {

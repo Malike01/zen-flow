@@ -1,82 +1,133 @@
-import { Modal, Form, Input, Button, message, Select, Spin } from 'antd';
+import { Modal, Form, Input, Button, message, Select, Spin, Tooltip, Typography, Space } from 'antd';
 import { useUiStore } from '../store/uiStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createTask, updateTask } from '../api/taskApi';
-import { getTags } from '../api/tagApi'; 
+import { getTags } from '../api/tagApi';
+import { useAiAssistant } from '../hooks/useAiAssistant'; 
 import { useEffect } from 'react';
-import type { CreateTaskPayload, IColumn, ITask, UpdateTaskPayload } from '../types';
+import { ThunderboltOutlined  } from '@ant-design/icons';
+import type { CreateTaskPayload, ITag, UpdateTaskPayload } from '../types';
 
 const { TextArea } = Input;
+const { Text } = Typography;
 
 export const TaskModal = () => {
   const { isTaskModalOpen, modalMode, editingTaskId, closeModal } = useUiStore();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
-
   const isEditMode = modalMode === 'edit';
 
-  const {
-    data: tagsData,
-    isLoading: isTagsLoading, 
-  } = useQuery({
-    queryKey: ['tags'], 
-    queryFn: getTags, 
-    enabled: isTaskModalOpen, 
+  const [messageApi, contextHolder] = message.useMessage();
+  
+
+  const { data: tagsData, isLoading: isTagsLoading } = useQuery({
+    queryKey: ['tags'],
+    queryFn: getTags,
+    enabled: isTaskModalOpen,
   });
 
+  // --- Task CRUD
   const createTaskMutation = useMutation({
     mutationFn: createTask,
     onSuccess: () => {
-      message.success('Task created!');
       queryClient.invalidateQueries({ queryKey: ['boardData'] });
-      closeModal();
     },
-    onError: (err) => message.error(`Failed to create task: ${err.message}`),
+    onError: (err) => messageApi.error(`Failed to create task: ${err.message}`),
   });
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, payload }: { taskId: string, payload: UpdateTaskPayload }) =>
       updateTask(taskId, payload),
     onSuccess: () => {
-      message.success('Task updated!');
+      messageApi.success('Task updated!');
       queryClient.invalidateQueries({ queryKey: ['boardData'] });
       closeModal();
     },
-    onError: (err) => message.error(`Failed to update task: ${err.message}`),
+    onError: (err) => messageApi.error(`Failed to update task: ${err.message}`),
   });
+
+  // --- AI Call --
+  const aiCallbacks = {
+    onSubtaskSuccess: (subtasks: string[]) => {
+      subtasks.forEach(subtaskTitle => {
+        createTaskMutation.mutate({ title: subtaskTitle, tags: [] });
+      });
+      closeModal();
+    },
+    onDescriptionSuccess: (description: string) => {
+      form.setFieldsValue({ description });
+    },
+    onTagSuccess: (suggestedTags: ITag[]) => {
+      const tagIds = suggestedTags.map(tag => tag._id);
+      form.setFieldsValue({ tags: tagIds });
+    },
+  };
+
+  const {
+    generateSubtasks,
+    isSubtaskLoading,
+    generateDescription,
+    isDescriptionLoading,
+    suggestTags,
+    isTagLoading,
+  } = useAiAssistant(aiCallbacks);
 
   useEffect(() => {
     if (isTaskModalOpen) {
-      if (isEditMode && editingTaskId) {
-        const taskData: ITask | undefined = queryClient
-          .getQueryData<IColumn[]>(['boardData'])
-          ?.flatMap((col) => col.tasks)
-          .find((task) => task._id === editingTaskId);
-        
-        if (taskData && taskData.tags) {
-          form.setFieldsValue({
-            title: taskData.title,
-            description: taskData.description,
-            tags: taskData.tags.map(tag => tag._id),
-          });
-        }
-      } else {
-        form.resetFields();
-      }
+      if (isEditMode && editingTaskId) { /* ... */ } else { form.resetFields(); }
     }
-  }, [isTaskModalOpen, isEditMode, editingTaskId, queryClient, form]); 
-
+  }, [isTaskModalOpen, isEditMode, editingTaskId, queryClient, form]);
+  
   const onFinish = (values: CreateTaskPayload | UpdateTaskPayload) => {
     if (isEditMode) {
       if (!editingTaskId) return;
       updateTaskMutation.mutate({ taskId: editingTaskId, payload: values });
     } else {
-      createTaskMutation.mutate(values as CreateTaskPayload);
+      createTaskMutation.mutate(values as CreateTaskPayload, {
+        onSuccess: () => {
+          messageApi.success('Task created!');
+          closeModal();
+        }
+      });
     }
   };
 
+  const handleGenerateSubtasks = () => {
+    const title = form.getFieldValue('title');
+    if (!title) {
+      messageApi.warning('Please enter a main task title first.'); return;
+    }
+    generateSubtasks(title); 
+  };
+
+  const handleGenerateDescription = () => {
+    const title = form.getFieldValue('title');
+    if (!title) {
+      messageApi.warning('Please enter a title first.'); return;
+    }
+    generateDescription(title); 
+  };
+
+  const handleSuggestTags = () => {
+    const title = form.getFieldValue('title');
+    const description = form.getFieldValue('description') || '';
+    if (!title) {
+      messageApi.warning('Please enter a title or description first.'); return;
+    }
+    suggestTags({ title, description }); 
+  };
+  
+  const AiIcon = ({ onClick, isLoading, title }: { onClick: () => void; isLoading: boolean; title: string }) => (
+    <Tooltip title={title}>
+      {isLoading ? <Spin size="small" /> : <ThunderboltOutlined style={{cursor: 'pointer', color: '#1890ff', fontSize: '22px'}} onClick={onClick} />}
+    </Tooltip>
+  );
+
+  
   return (
-    <Modal
+    <>
+    {contextHolder}
+    <Modal 
       title={isEditMode ? "Edit Task" : "Create New Task"}
       open={isTaskModalOpen}
       onCancel={closeModal}
@@ -84,12 +135,8 @@ export const TaskModal = () => {
       centered
       confirmLoading={isTagsLoading}
     >
-      {isTagsLoading ? (
-        <div style={{ display: 'grid', placeItems: 'center', height: '200px' }}>
-          <Spin />
-        </div>
-      ) : (
-        <Form
+      {isTagsLoading ? ( <Spin /> ) : (
+        <Form 
           form={form}
           layout="vertical"
           onFinish={onFinish}
@@ -97,21 +144,51 @@ export const TaskModal = () => {
         >
           <Form.Item
             name="title"
-            label="Title"
-            rules={[{ required: true, message: 'Please input the title!' }]}
+            label={
+              <div>
+                <Text style={{marginRight:5}}>Title</Text>
+                {!isEditMode && (
+                  <AiIcon
+                    onClick={handleGenerateSubtasks}
+                    isLoading={isSubtaskLoading}
+                    title="Generate subtasks with AI"
+                  />
+                )}
+              </div>
+            }
+            rules={[{ required: true }]}
           >
-            <Input />
+            <Input/>
           </Form.Item>
-
-          <Form.Item name="description" label="Description">
-            <TextArea rows={4} />
+          <Form.Item
+            name="description"
+            label={
+              <div>
+                <Text style={{marginRight:5}}>Description</Text>
+                <AiIcon
+                  onClick={handleGenerateDescription}
+                  isLoading={isDescriptionLoading}
+                  title="Generate description with AI"
+                />
+              </div>
+            }
+          >
+            <TextArea  rows={4}/>
           </Form.Item>
-
           <Form.Item
             name="tags"
-            label="Tags"
+            label={
+              <div >
+                <Text style={{marginRight:5}}>Tags</Text>
+                <AiIcon
+                  onClick={handleSuggestTags}
+                  isLoading={isTagLoading} 
+                  title="Suggest tags with AI"
+                />
+              </div>
+            }
           >
-            <Select
+            <Select  
               mode="multiple" 
               allowClear
               placeholder="Select tags..."
@@ -134,24 +211,31 @@ export const TaskModal = () => {
                 ),
                 value: tag._id, 
               }))}
-              optionFilterProp="label" 
+              optionFilterProp="label"  
             />
           </Form.Item>
+          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }} wrapperCol={{ span: 12, offset: 12}}>
+            <Space>
+              <Button onClick={closeModal} > Cancel </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={
+                  createTaskMutation.isPending ||
+                  updateTaskMutation.isPending ||
+                  isSubtaskLoading || 
+                  isDescriptionLoading || 
+                  isTagLoading 
+                }
+              >
+                {isEditMode ? "Save Changes" : "Create Task"}
+              </Button>
+            </Space>
 
-          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-            <Button onClick={closeModal} style={{ marginRight: 8 }}>
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={createTaskMutation.isPending || updateTaskMutation.isPending}
-            >
-              {isEditMode ? "Save Changes" : "Create"}
-            </Button>
           </Form.Item>
         </Form>
       )}
     </Modal>
+    </>
   );
 };
