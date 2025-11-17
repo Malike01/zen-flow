@@ -4,6 +4,8 @@
 >
 > 
 <img width="1919" height="1027" alt="image" src="https://github.com/user-attachments/assets/1acfd88f-da75-429a-882d-b53e34a9cedb" />
+<img width="1919" height="939" alt="Ekran görüntüsü 2025-11-17 165940" src="https://github.com/user-attachments/assets/f7cc4190-a1e8-4f49-9784-6b8f997ee175" />
+<img width="1917" height="935" alt="Ekran görüntüsü 2025-11-17 170233" src="https://github.com/user-attachments/assets/bd652e6d-c6d2-4d4a-89bf-1124efae5a0f" />
 
 ## ✨ Features
 
